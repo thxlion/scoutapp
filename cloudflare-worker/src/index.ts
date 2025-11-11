@@ -150,14 +150,50 @@ Respond with JSON in this format: {"titles": [{"title":"...", "media_type":"..."
     }
   }
 
-  const seen = new Set<string>();
-  return extracted
-    .filter(entry => {
-      const key = entry.title.toLowerCase();
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    })
+  // Smart deduplication: remove duplicates and very similar titles
+  const deduplicated: ExtractedTitle[] = [];
+  const seenNormalized = new Set<string>();
+
+  for (const entry of extracted) {
+    // Normalize for comparison: remove subtitle, articles, special chars, lowercase
+    const normalizedTitle = removeArticle(removeSubtitle(entry.title))
+      .toLowerCase()
+      .replace(/[^\w\s]/g, '') // Remove all special chars
+      .replace(/\s+/g, ' ')     // Normalize whitespace
+      .trim();
+
+    // Skip if we've seen this exact normalized title
+    if (seenNormalized.has(normalizedTitle)) {
+      continue;
+    }
+
+    // Check if we already have a very similar title
+    const isDuplicate = deduplicated.some(existing => {
+      const existingNormalized = removeArticle(removeSubtitle(existing.title))
+        .toLowerCase()
+        .replace(/[^\w\s]/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+      // Check if one is substring of the other (with some wiggle room)
+      if (normalizedTitle.length >= 4 && existingNormalized.length >= 4) {
+        if (normalizedTitle.includes(existingNormalized) || existingNormalized.includes(normalizedTitle)) {
+          return true;
+        }
+      }
+
+      // Check string similarity
+      const similarity = stringSimilarity(normalizedTitle, existingNormalized);
+      return similarity > 0.8; // Lower threshold, more aggressive
+    });
+
+    if (!isDuplicate) {
+      deduplicated.push(entry);
+      seenNormalized.add(normalizedTitle);
+    }
+  }
+
+  return deduplicated
     .sort((a, b) => a.order - b.order)
     .slice(0, 25);
 }

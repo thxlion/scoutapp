@@ -55,9 +55,11 @@ struct HomeView: View {
           }
       } else if let error = controller.errorMessage {
         bubble(text: error, alignment: .leading, color: Color.red.opacity(0.15), textColor: .red)
-      } else if let response = controller.responseText, !response.isEmpty {
-        bubble(text: response, alignment: .leading, color: Color.blue, textColor: .white)
       }
+      // Hide GPT response text - just show cards
+      // else if let response = controller.responseText, !response.isEmpty {
+      //   bubble(text: response, alignment: .leading, color: Color.blue, textColor: .white)
+      // }
     }
   }
 
@@ -66,10 +68,6 @@ struct HomeView: View {
     if controller.suggestions.isEmpty {
       EmptyView()
     } else {
-      Text("Titles GPT called out")
-        .font(.headline)
-        .padding(.horizontal, 4)
-
       SuggestionGridView(suggestions: controller.suggestions) { suggestion in
         selectedSuggestion = suggestion
       }
