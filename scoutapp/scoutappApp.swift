@@ -1,6 +1,6 @@
 //
-//  bobastudioApp.swift
-//  bobastudio
+//  scoutappApp.swift
+//  scoutapp
 //
 //  Created by sulley on 04/11/2025.
 //
@@ -8,7 +8,7 @@
 import SwiftUI
 
 @main
-struct bobastudioApp: App {
+struct scoutappApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()

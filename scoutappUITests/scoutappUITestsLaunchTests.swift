@@ -1,13 +1,13 @@
 //
-//  bobastudioUITestsLaunchTests.swift
-//  bobastudioUITests
+//  scoutappUITestsLaunchTests.swift
+//  scoutappUITests
 //
 //  Created by sulley on 04/11/2025.
 //
 
 import XCTest
 
-final class bobastudioUITestsLaunchTests: XCTestCase {
+final class scoutappUITestsLaunchTests: XCTestCase {
 
     override class var runsForEachTargetApplicationUIConfiguration: Bool {
         true

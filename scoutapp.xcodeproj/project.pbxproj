@@ -12,37 +12,37 @@
 			containerPortal = 49FCD0F02EB983D20094D329 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = 49FCD0F72EB983D20094D329;
-			remoteInfo = bobastudio;
+			remoteInfo = scoutapp;
 		};
 		49FCD1132EB983D30094D329 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 49FCD0F02EB983D20094D329 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = 49FCD0F72EB983D20094D329;
-			remoteInfo = bobastudio;
+			remoteInfo = scoutapp;
 		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		49FCD0F82EB983D20094D329 /* bobastudio.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = bobastudio.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		49FCD1082EB983D30094D329 /* bobastudioTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = bobastudioTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		49FCD1122EB983D30094D329 /* bobastudioUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = bobastudioUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		49FCD0F82EB983D20094D329 /* scoutapp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = scoutapp.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		49FCD1082EB983D30094D329 /* scoutappTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = scoutappTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		49FCD1122EB983D30094D329 /* scoutappUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = scoutappUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		49FCD0FA2EB983D20094D329 /* bobastudio */ = {
+		49FCD0FA2EB983D20094D329 /* scoutapp */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = bobastudio;
+			path = scoutapp;
 			sourceTree = "<group>";
 		};
-		49FCD10B2EB983D30094D329 /* bobastudioTests */ = {
+		49FCD10B2EB983D30094D329 /* scoutappTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = bobastudioTests;
+			path = scoutappTests;
 			sourceTree = "<group>";
 		};
-		49FCD1152EB983D30094D329 /* bobastudioUITests */ = {
+		49FCD1152EB983D30094D329 /* scoutappUITests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = bobastudioUITests;
+			path = scoutappUITests;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -75,9 +75,9 @@
 		49FCD0EF2EB983D20094D329 = {
 			isa = PBXGroup;
 			children = (
-				49FCD0FA2EB983D20094D329 /* bobastudio */,
-				49FCD10B2EB983D30094D329 /* bobastudioTests */,
-				49FCD1152EB983D30094D329 /* bobastudioUITests */,
+				49FCD0FA2EB983D20094D329 /* scoutapp */,
+				49FCD10B2EB983D30094D329 /* scoutappTests */,
+				49FCD1152EB983D30094D329 /* scoutappUITests */,
 				49FCD0F92EB983D20094D329 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -85,9 +85,9 @@
 		49FCD0F92EB983D20094D329 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				49FCD0F82EB983D20094D329 /* bobastudio.app */,
-				49FCD1082EB983D30094D329 /* bobastudioTests.xctest */,
-				49FCD1122EB983D30094D329 /* bobastudioUITests.xctest */,
+				49FCD0F82EB983D20094D329 /* scoutapp.app */,
+				49FCD1082EB983D30094D329 /* scoutappTests.xctest */,
+				49FCD1122EB983D30094D329 /* scoutappUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -95,9 +95,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		49FCD0F72EB983D20094D329 /* bobastudio */ = {
+		49FCD0F72EB983D20094D329 /* scoutapp */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 49FCD11C2EB983D30094D329 /* Build configuration list for PBXNativeTarget "bobastudio" */;
+			buildConfigurationList = 49FCD11C2EB983D30094D329 /* Build configuration list for PBXNativeTarget "scoutapp" */;
 			buildPhases = (
 				49FCD0F42EB983D20094D329 /* Sources */,
 				49FCD0F52EB983D20094D329 /* Frameworks */,
@@ -108,18 +108,18 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				49FCD0FA2EB983D20094D329 /* bobastudio */,
+				49FCD0FA2EB983D20094D329 /* scoutapp */,
 			);
-			name = bobastudio;
+			name = scoutapp;
 			packageProductDependencies = (
 			);
-			productName = bobastudio;
-			productReference = 49FCD0F82EB983D20094D329 /* bobastudio.app */;
+			productName = scoutapp;
+			productReference = 49FCD0F82EB983D20094D329 /* scoutapp.app */;
 			productType = "com.apple.product-type.application";
 		};
-		49FCD1072EB983D30094D329 /* bobastudioTests */ = {
+		49FCD1072EB983D30094D329 /* scoutappTests */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 49FCD11F2EB983D30094D329 /* Build configuration list for PBXNativeTarget "bobastudioTests" */;
+			buildConfigurationList = 49FCD11F2EB983D30094D329 /* Build configuration list for PBXNativeTarget "scoutappTests" */;
 			buildPhases = (
 				49FCD1042EB983D30094D329 /* Sources */,
 				49FCD1052EB983D30094D329 /* Frameworks */,
@@ -131,18 +131,18 @@
 				49FCD10A2EB983D30094D329 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
-				49FCD10B2EB983D30094D329 /* bobastudioTests */,
+				49FCD10B2EB983D30094D329 /* scoutappTests */,
 			);
-			name = bobastudioTests;
+			name = scoutappTests;
 			packageProductDependencies = (
 			);
-			productName = bobastudioTests;
-			productReference = 49FCD1082EB983D30094D329 /* bobastudioTests.xctest */;
+			productName = scoutappTests;
+			productReference = 49FCD1082EB983D30094D329 /* scoutappTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
-		49FCD1112EB983D30094D329 /* bobastudioUITests */ = {
+		49FCD1112EB983D30094D329 /* scoutappUITests */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 49FCD1222EB983D30094D329 /* Build configuration list for PBXNativeTarget "bobastudioUITests" */;
+			buildConfigurationList = 49FCD1222EB983D30094D329 /* Build configuration list for PBXNativeTarget "scoutappUITests" */;
 			buildPhases = (
 				49FCD10E2EB983D30094D329 /* Sources */,
 				49FCD10F2EB983D30094D329 /* Frameworks */,
@@ -154,13 +154,13 @@
 				49FCD1142EB983D30094D329 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
-				49FCD1152EB983D30094D329 /* bobastudioUITests */,
+				49FCD1152EB983D30094D329 /* scoutappUITests */,
 			);
-			name = bobastudioUITests;
+			name = scoutappUITests;
 			packageProductDependencies = (
 			);
-			productName = bobastudioUITests;
-			productReference = 49FCD1122EB983D30094D329 /* bobastudioUITests.xctest */;
+			productName = scoutappUITests;
+			productReference = 49FCD1122EB983D30094D329 /* scoutappUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
 /* End PBXNativeTarget section */
@@ -186,7 +186,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 49FCD0F32EB983D20094D329 /* Build configuration list for PBXProject "bobastudio" */;
+			buildConfigurationList = 49FCD0F32EB983D20094D329 /* Build configuration list for PBXProject "scoutapp" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -200,9 +200,9 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				49FCD0F72EB983D20094D329 /* bobastudio */,
-				49FCD1072EB983D30094D329 /* bobastudioTests */,
-				49FCD1112EB983D30094D329 /* bobastudioUITests */,
+				49FCD0F72EB983D20094D329 /* scoutapp */,
+				49FCD1072EB983D30094D329 /* scoutappTests */,
+				49FCD1112EB983D30094D329 /* scoutappUITests */,
 			);
 		};
 /* End PBXProject section */
@@ -258,12 +258,12 @@
 /* Begin PBXTargetDependency section */
 		49FCD10A2EB983D30094D329 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 49FCD0F72EB983D20094D329 /* bobastudio */;
+			target = 49FCD0F72EB983D20094D329 /* scoutapp */;
 			targetProxy = 49FCD1092EB983D30094D329 /* PBXContainerItemProxy */;
 		};
 		49FCD1142EB983D30094D329 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 49FCD0F72EB983D20094D329 /* bobastudio */;
+			target = 49FCD0F72EB983D20094D329 /* scoutapp */;
 			targetProxy = 49FCD1132EB983D30094D329 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
@@ -395,7 +395,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_ASSET_PATHS = "\"bobastudio/Preview Content\"";
+				DEVELOPMENT_ASSET_PATHS = "\"scoutapp/Preview Content\"";
 				DEVELOPMENT_TEAM = 8849W39V85;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -409,7 +409,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = geralt.bobastudio;
+				PRODUCT_BUNDLE_IDENTIFIER = geralt.scoutapp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -424,7 +424,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_ASSET_PATHS = "\"bobastudio/Preview Content\"";
+				DEVELOPMENT_ASSET_PATHS = "\"scoutapp/Preview Content\"";
 				DEVELOPMENT_TEAM = 8849W39V85;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -438,7 +438,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = geralt.bobastudio;
+				PRODUCT_BUNDLE_IDENTIFIER = geralt.scoutapp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -456,12 +456,12 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.1;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = geralt.bobastudioTests;
+				PRODUCT_BUNDLE_IDENTIFIER = geralt.scoutappTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/bobastudio.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/bobastudio";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/scoutapp.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/scoutapp";
 			};
 			name = Debug;
 		};
@@ -475,12 +475,12 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.1;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = geralt.bobastudioTests;
+				PRODUCT_BUNDLE_IDENTIFIER = geralt.scoutappTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/bobastudio.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/bobastudio";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/scoutapp.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/scoutapp";
 			};
 			name = Release;
 		};
@@ -492,12 +492,12 @@
 				DEVELOPMENT_TEAM = 8849W39V85;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = geralt.bobastudioUITests;
+				PRODUCT_BUNDLE_IDENTIFIER = geralt.scoutappUITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_TARGET_NAME = bobastudio;
+				TEST_TARGET_NAME = scoutapp;
 			};
 			name = Debug;
 		};
@@ -509,19 +509,19 @@
 				DEVELOPMENT_TEAM = 8849W39V85;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = geralt.bobastudioUITests;
+				PRODUCT_BUNDLE_IDENTIFIER = geralt.scoutappUITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_TARGET_NAME = bobastudio;
+				TEST_TARGET_NAME = scoutapp;
 			};
 			name = Release;
 		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		49FCD0F32EB983D20094D329 /* Build configuration list for PBXProject "bobastudio" */ = {
+		49FCD0F32EB983D20094D329 /* Build configuration list for PBXProject "scoutapp" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				49FCD11A2EB983D30094D329 /* Debug */,
@@ -530,7 +530,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		49FCD11C2EB983D30094D329 /* Build configuration list for PBXNativeTarget "bobastudio" */ = {
+		49FCD11C2EB983D30094D329 /* Build configuration list for PBXNativeTarget "scoutapp" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				49FCD11D2EB983D30094D329 /* Debug */,
@@ -539,7 +539,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		49FCD11F2EB983D30094D329 /* Build configuration list for PBXNativeTarget "bobastudioTests" */ = {
+		49FCD11F2EB983D30094D329 /* Build configuration list for PBXNativeTarget "scoutappTests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				49FCD1202EB983D30094D329 /* Debug */,
@@ -548,7 +548,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		49FCD1222EB983D30094D329 /* Build configuration list for PBXNativeTarget "bobastudioUITests" */ = {
+		49FCD1222EB983D30094D329 /* Build configuration list for PBXNativeTarget "scoutappUITests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				49FCD1232EB983D30094D329 /* Debug */,

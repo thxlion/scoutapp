@@ -1,13 +1,13 @@
 //
-//  bobastudioUITests.swift
-//  bobastudioUITests
+//  scoutappUITests.swift
+//  scoutappUITests
 //
 //  Created by sulley on 04/11/2025.
 //
 
 import XCTest
 
-final class bobastudioUITests: XCTestCase {
+final class scoutappUITests: XCTestCase {
 
     override func setUpWithError() throws {
         // Put setup code here. This method is called before the invocation of each test method in the class.
