@@ -16,6 +16,13 @@ enum Config {
   /// Convenience helper for building full poster URLs
   static func posterURL(path: String?) -> URL? {
     guard let path else { return nil; }
+
+    // If it's already a full URL (from OMDb), return it as-is
+    if path.hasPrefix("http://") || path.hasPrefix("https://") {
+      return URL(string: path);
+    }
+
+    // Otherwise, construct TMDB URL
     let trimmed = path.hasPrefix("/") ? String(path.dropFirst()) : path;
     return imgBase.appending(path: posterSize).appending(path: trimmed);
   }
