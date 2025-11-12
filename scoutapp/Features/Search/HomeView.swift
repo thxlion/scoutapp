@@ -436,183 +436,184 @@ struct SuggestionCard: View {
 
 struct CarouselDetailView: View {
   let suggestions: [Suggestion]
-  @State private var currentIndex = 0
+  @State private var currentIndex: Int = 0
   @State private var dragOffset: CGFloat = 0
-  @State private var carouselOffset: CGFloat = 0
-  @State private var isDragging = false
+  @State private var coverFlowParameters = CoverFlowParameters()
+  @State private var showCoverFlowHUD = false
   @Environment(\.dismiss) private var dismiss
 
   var currentSuggestion: Suggestion {
-    suggestions[currentIndex]
+    return suggestions[min(max(0, currentIndex), suggestions.count - 1)]
+  }
+
+  private func coverFlowCarousel(width: CGFloat) -> some View {
+    let size = coverFlowParameters.cardSize(for: width)
+    return CoverFlowPagerView(
+      suggestions: suggestions,
+      currentIndex: $currentIndex,
+      cardSize: size,
+      parameters: coverFlowParameters
+    )
+    .frame(height: size.height)
+  }
+
+  private var movieDetailsContent: some View {
+    VStack(spacing: 24) {
+      // Title and metadata
+      VStack(spacing: 12) {
+        Text(currentSuggestion.title)
+          .font(.system(size: 24, weight: .bold))
+          .multilineTextAlignment(.center)
+
+        HStack(spacing: 12) {
+          if !currentSuggestion.displayYear.isEmpty {
+            Text(currentSuggestion.displayYear)
+              .font(.subheadline)
+              .foregroundStyle(.secondary)
+          }
+          if let rating = currentSuggestion.tmdb?.voteAverage {
+            HStack(spacing: 4) {
+              Image(systemName: "star.fill")
+                .font(.caption)
+                .foregroundStyle(.yellow)
+              Text(String(format: "%.1f", rating))
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+            }
+          }
+        }
+      }
+
+      // Genres
+      if !currentSuggestion.genres.isEmpty {
+        ScrollView(.horizontal, showsIndicators: false) {
+          HStack(spacing: 8) {
+            ForEach(currentSuggestion.genres, id: \.self) { genre in
+              Text(genre)
+                .font(.footnote.weight(.medium))
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(
+                  Capsule()
+                    .fill(Color.blue.opacity(0.15))
+                )
+                .foregroundStyle(.blue)
+            }
+          }
+          .padding(.horizontal, 24)
+        }
+      }
+
+      // Overview
+      if !currentSuggestion.overview.isEmpty {
+        VStack(alignment: .leading, spacing: 8) {
+          Text("Overview")
+            .font(.headline)
+          Text(currentSuggestion.overview)
+            .font(.body)
+            .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 24)
+      }
+
+      // Providers
+      if let providers = currentSuggestion.providers {
+        ProviderSection(providers: providers)
+          .padding(.horizontal, 24)
+      }
+    }
+    .transition(.opacity.combined(with: .scale(scale: 0.98)))
   }
 
   var body: some View {
     GeometryReader { geometry in
-      VStack(spacing: 0) {
-        // Drag handle
-        RoundedRectangle(cornerRadius: 2.5)
-          .fill(Color(.systemGray3))
-          .frame(width: 36, height: 5)
-          .padding(.top, 8)
+      ZStack(alignment: .topTrailing) {
+        sheetContent(width: geometry.size.width)
+        hudOverlay()
+      }
+    }
+  }
 
-        ScrollView {
-          VStack(spacing: 24) {
-            // Coverflow-style card stack
-            ZStack {
-              ForEach(Array(suggestions.enumerated()), id: \.element.id) { cardIndex, cardSuggestion in
-                let baseOffset = CGFloat(cardIndex - currentIndex) * 80
-                let totalOffset = baseOffset + carouselOffset
-                let normalizedOffset = totalOffset / 80
-                let absNormalizedOffset = abs(normalizedOffset)
-                let isVisible = abs(cardIndex - currentIndex) <= 2
+  @ViewBuilder
+  private func sheetContent(width: CGFloat) -> some View {
+    VStack(spacing: 0) {
+      RoundedRectangle(cornerRadius: 2.5)
+        .fill(Color(.systemGray3))
+        .frame(width: 36, height: 5)
+        .padding(.top, 8)
 
-                if isVisible {
-                  AsyncImage(url: cardSuggestion.posterURL) { phase in
-                    switch phase {
-                    case .success(let image):
-                      image.resizable().scaledToFill()
-                    case .failure:
-                      Color(.systemGray4)
-                    case .empty:
-                      Color(.systemGray4).overlay { ProgressView() }
-                    @unknown default:
-                      Color(.systemGray4)
-                    }
-                  }
-                  .frame(width: 240, height: 360)
-                  .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
-                  .shadow(color: Color.black.opacity(0.2), radius: 16, x: 0, y: 8)
-                  .scaleEffect(max(0.85, 1.0 - absNormalizedOffset * 0.15))
-                  .offset(x: totalOffset)
-                  .zIndex(absNormalizedOffset < 0.5 ? 2 : (2 - absNormalizedOffset))
-                }
-              }
-            }
-            .frame(height: 360)
-            .gesture(
-              DragGesture()
-                .onChanged { value in
-                  isDragging = true
-                  carouselOffset = value.translation.width
-                }
-                .onEnded { value in
-                  isDragging = false
+      ScrollView {
+        VStack(spacing: 24) {
+          coverFlowCarousel(width: width)
 
-                  // Calculate velocity
-                  let velocity = value.predictedEndTranslation.width - value.translation.width
-                  let cardWidth: CGFloat = 80
-
-                  // Determine target index based on offset and velocity
-                  var targetOffset = carouselOffset
-                  if abs(velocity) > 50 {
-                    targetOffset += velocity * 0.3
-                  }
-
-                  let indexChange = -round(targetOffset / cardWidth)
-                  let newIndex = currentIndex + Int(indexChange)
-
-                  withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-                    currentIndex = max(0, min(suggestions.count - 1, newIndex))
-                    carouselOffset = 0
-                  }
-                }
-            )
-
-            // Title and metadata
-            VStack(spacing: 12) {
-              Text(currentSuggestion.title)
-                .font(.system(size: 24, weight: .bold))
-                .multilineTextAlignment(.center)
-
-              HStack(spacing: 12) {
-                if !currentSuggestion.displayYear.isEmpty {
-                  Text(currentSuggestion.displayYear)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                }
-                if let rating = currentSuggestion.tmdb?.voteAverage {
-                  HStack(spacing: 4) {
-                    Image(systemName: "star.fill")
-                      .font(.caption)
-                      .foregroundStyle(.yellow)
-                    Text(String(format: "%.1f", rating))
-                      .font(.subheadline)
-                      .foregroundStyle(.secondary)
-                  }
-                }
-              }
-            }
-            .id("title-\(currentIndex)")
-            .transition(.opacity)
-
-            // Genres
-            if !currentSuggestion.genres.isEmpty {
-              ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
-                  ForEach(currentSuggestion.genres, id: \.self) { genre in
-                    Text(genre)
-                      .font(.footnote.weight(.medium))
-                      .padding(.horizontal, 12)
-                      .padding(.vertical, 6)
-                      .background(
-                        Capsule()
-                          .fill(Color.blue.opacity(0.15))
-                      )
-                      .foregroundStyle(.blue)
-                  }
-                }
-                .padding(.horizontal, 24)
-              }
-              .id("genres-\(currentIndex)")
-              .transition(.opacity)
-            }
-
-            // Overview
-            if !currentSuggestion.overview.isEmpty {
-              VStack(alignment: .leading, spacing: 8) {
-                Text("Overview")
-                  .font(.headline)
-                Text(currentSuggestion.overview)
-                  .font(.body)
-                  .foregroundStyle(.secondary)
-              }
-              .frame(maxWidth: .infinity, alignment: .leading)
-              .padding(.horizontal, 24)
-              .id("overview-\(currentIndex)")
-              .transition(.opacity)
-            }
-
-            // Providers
-            if let providers = currentSuggestion.providers {
-              ProviderSection(providers: providers)
-                .padding(.horizontal, 24)
-                .id("providers-\(currentIndex)")
-                .transition(.opacity)
+          movieDetailsContent
+            .animation(.easeInOut(duration: 0.3), value: currentIndex)
+        }
+        .padding(.vertical, 24)
+      }
+    }
+    .offset(y: dragOffset)
+    .simultaneousGesture(
+      DragGesture()
+        .onChanged { value in
+          if value.translation.height > 0 && abs(value.translation.height) > abs(value.translation.width) {
+            let translation = value.translation.height
+            let dampingFactor: CGFloat = 0.65
+            let resistance = pow(translation, 0.85)
+            dragOffset = resistance * dampingFactor
+          }
+        }
+        .onEnded { value in
+          let translation = value.translation.height
+          if translation > 150 && abs(value.translation.height) > abs(value.translation.width) {
+            dismiss()
+          } else {
+            withAnimation(.spring()) {
+              dragOffset = 0
             }
           }
-          .padding(.vertical, 24)
+        }
+    )
+  }
+
+  @ViewBuilder
+  private func hudOverlay() -> some View {
+#if DEBUG
+    VStack {
+      Spacer()
+      HStack {
+        Spacer()
+        VStack(alignment: .trailing, spacing: 12) {
+          if showCoverFlowHUD {
+            CoverFlowDebugHUD(parameters: $coverFlowParameters) {
+              withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) {
+                showCoverFlowHUD = false
+              }
+            }
+            .transition(.move(edge: .trailing).combined(with: .opacity))
+          }
+
+          Button {
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+              showCoverFlowHUD.toggle()
+            }
+          } label: {
+            Image(systemName: showCoverFlowHUD ? "xmark.circle" : "slider.horizontal.3")
+              .font(.system(size: 17, weight: .bold))
+              .foregroundStyle(.primary)
+              .padding(12)
+              .background(.ultraThinMaterial, in: Circle())
+          }
+          .accessibilityLabel("Toggle cover flow tuning HUD")
         }
       }
-      .offset(y: dragOffset)
-      .simultaneousGesture(
-        DragGesture()
-          .onChanged { value in
-            // Only allow vertical drag down when it's primarily vertical
-            if value.translation.height > 0 && abs(value.translation.height) > abs(value.translation.width) {
-              dragOffset = value.translation.height
-            }
-          }
-          .onEnded { value in
-            if value.translation.height > 150 && abs(value.translation.height) > abs(value.translation.width) {
-              dismiss()
-            } else {
-              withAnimation(.spring()) {
-                dragOffset = 0
-              }
-            }
-          }
-      )
+      .padding(.trailing, 20)
+      .padding(.bottom, 28)
     }
+#else
+    EmptyView()
+#endif
   }
 }
 
