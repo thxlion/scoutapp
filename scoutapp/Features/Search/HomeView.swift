@@ -49,7 +49,7 @@ struct HomeView: View {
       .background(Color(.systemBackground))
       .navigationBarHidden(true)
       .preferredColorScheme(.light)
-      .sheet(item: $selectedResult) { result in
+      .fullScreenCover(item: $selectedResult) { result in
         CarouselDetailView(suggestions: result.suggestions)
       }
     }
@@ -208,7 +208,7 @@ struct HomeView: View {
 struct LoadingBubbleView: View {
   @State private var currentPhraseIndex = 0
   @State private var displayedText = ""
-  @State private var isTyping = false
+  @State private var animationTask: Task<Void, Never>?
 
   private let phrases = [
     "Hunting gems",
@@ -235,29 +235,36 @@ struct LoadingBubbleView: View {
     .onAppear {
       startTypingAnimation()
     }
+    .onDisappear {
+      animationTask?.cancel()
+    }
   }
 
   private func startTypingAnimation() {
-    typeText(phrases[currentPhraseIndex])
-  }
+    // Cancel any existing animation
+    animationTask?.cancel()
 
-  private func typeText(_ text: String) {
-    displayedText = ""
-    isTyping = true
-
-    for (index, character) in text.enumerated() {
-      DispatchQueue.main.asyncAfter(deadline: .now() + Double(index) * 0.05) {
-        displayedText.append(character)
-
-        if index == text.count - 1 {
-          // Wait 2 seconds then move to next phrase
-          DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-            currentPhraseIndex = (currentPhraseIndex + 1) % phrases.count
-            typeText(phrases[currentPhraseIndex])
-          }
-        }
+    // Start a new animation task
+    animationTask = Task {
+      while !Task.isCancelled {
+        await typeText(phrases[currentPhraseIndex])
+        currentPhraseIndex = (currentPhraseIndex + 1) % phrases.count
       }
     }
+  }
+
+  private func typeText(_ text: String) async {
+    displayedText = ""
+
+    for character in text {
+      guard !Task.isCancelled else { return }
+      displayedText.append(character)
+      try? await Task.sleep(nanoseconds: 50_000_000) // 0.05 seconds
+    }
+
+    // Wait 2 seconds before next phrase
+    guard !Task.isCancelled else { return }
+    try? await Task.sleep(nanoseconds: 2_000_000_000) // 2 seconds
   }
 }
 
@@ -430,17 +437,34 @@ struct SuggestionCard: View {
 struct CarouselDetailView: View {
   let suggestions: [Suggestion]
   @State private var currentIndex = 0
+  @State private var dragOffset: CGFloat = 0
+  @State private var carouselOffset: CGFloat = 0
+  @State private var isDragging = false
+  @Environment(\.dismiss) private var dismiss
+
+  var currentSuggestion: Suggestion {
+    suggestions[currentIndex]
+  }
 
   var body: some View {
-    TabView(selection: $currentIndex) {
-      ForEach(Array(suggestions.enumerated()), id: \.element.id) { index, suggestion in
+    GeometryReader { geometry in
+      VStack(spacing: 0) {
+        // Drag handle
+        RoundedRectangle(cornerRadius: 2.5)
+          .fill(Color(.systemGray3))
+          .frame(width: 36, height: 5)
+          .padding(.top, 8)
+
         ScrollView {
           VStack(spacing: 24) {
             // Coverflow-style card stack
             ZStack {
               ForEach(Array(suggestions.enumerated()), id: \.element.id) { cardIndex, cardSuggestion in
-                let offset = CGFloat(cardIndex - currentIndex)
-                let isVisible = abs(offset) <= 1
+                let baseOffset = CGFloat(cardIndex - currentIndex) * 80
+                let totalOffset = baseOffset + carouselOffset
+                let normalizedOffset = totalOffset / 80
+                let absNormalizedOffset = abs(normalizedOffset)
+                let isVisible = abs(cardIndex - currentIndex) <= 2
 
                 if isVisible {
                   AsyncImage(url: cardSuggestion.posterURL) { phase in
@@ -458,28 +482,55 @@ struct CarouselDetailView: View {
                   .frame(width: 240, height: 360)
                   .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
                   .shadow(color: Color.black.opacity(0.2), radius: 16, x: 0, y: 8)
-                  .scaleEffect(cardIndex == currentIndex ? 1.0 : 0.85)
-                  .offset(x: offset * 80)
-                  .zIndex(cardIndex == currentIndex ? 1 : 0)
-                  .animation(.spring(duration: 0.3), value: currentIndex)
+                  .scaleEffect(max(0.85, 1.0 - absNormalizedOffset * 0.15))
+                  .offset(x: totalOffset)
+                  .zIndex(absNormalizedOffset < 0.5 ? 2 : (2 - absNormalizedOffset))
                 }
               }
             }
             .frame(height: 360)
+            .gesture(
+              DragGesture()
+                .onChanged { value in
+                  isDragging = true
+                  carouselOffset = value.translation.width
+                }
+                .onEnded { value in
+                  isDragging = false
+
+                  // Calculate velocity
+                  let velocity = value.predictedEndTranslation.width - value.translation.width
+                  let cardWidth: CGFloat = 80
+
+                  // Determine target index based on offset and velocity
+                  var targetOffset = carouselOffset
+                  if abs(velocity) > 50 {
+                    targetOffset += velocity * 0.3
+                  }
+
+                  let indexChange = -round(targetOffset / cardWidth)
+                  let newIndex = currentIndex + Int(indexChange)
+
+                  withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                    currentIndex = max(0, min(suggestions.count - 1, newIndex))
+                    carouselOffset = 0
+                  }
+                }
+            )
 
             // Title and metadata
             VStack(spacing: 12) {
-              Text(suggestion.title)
+              Text(currentSuggestion.title)
                 .font(.system(size: 24, weight: .bold))
                 .multilineTextAlignment(.center)
 
               HStack(spacing: 12) {
-                if !suggestion.displayYear.isEmpty {
-                  Text(suggestion.displayYear)
+                if !currentSuggestion.displayYear.isEmpty {
+                  Text(currentSuggestion.displayYear)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                 }
-                if let rating = suggestion.tmdb?.voteAverage {
+                if let rating = currentSuggestion.tmdb?.voteAverage {
                   HStack(spacing: 4) {
                     Image(systemName: "star.fill")
                       .font(.caption)
@@ -491,12 +542,14 @@ struct CarouselDetailView: View {
                 }
               }
             }
+            .id("title-\(currentIndex)")
+            .transition(.opacity)
 
             // Genres
-            if !suggestion.genres.isEmpty {
+            if !currentSuggestion.genres.isEmpty {
               ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
-                  ForEach(suggestion.genres, id: \.self) { genre in
+                  ForEach(currentSuggestion.genres, id: \.self) { genre in
                     Text(genre)
                       .font(.footnote.weight(.medium))
                       .padding(.horizontal, 12)
@@ -510,34 +563,56 @@ struct CarouselDetailView: View {
                 }
                 .padding(.horizontal, 24)
               }
+              .id("genres-\(currentIndex)")
+              .transition(.opacity)
             }
 
             // Overview
-            if !suggestion.overview.isEmpty {
+            if !currentSuggestion.overview.isEmpty {
               VStack(alignment: .leading, spacing: 8) {
                 Text("Overview")
                   .font(.headline)
-                Text(suggestion.overview)
+                Text(currentSuggestion.overview)
                   .font(.body)
                   .foregroundStyle(.secondary)
               }
               .frame(maxWidth: .infinity, alignment: .leading)
               .padding(.horizontal, 24)
+              .id("overview-\(currentIndex)")
+              .transition(.opacity)
             }
 
             // Providers
-            if let providers = suggestion.providers {
+            if let providers = currentSuggestion.providers {
               ProviderSection(providers: providers)
                 .padding(.horizontal, 24)
+                .id("providers-\(currentIndex)")
+                .transition(.opacity)
             }
           }
           .padding(.vertical, 24)
         }
-        .tag(index)
       }
+      .offset(y: dragOffset)
+      .simultaneousGesture(
+        DragGesture()
+          .onChanged { value in
+            // Only allow vertical drag down when it's primarily vertical
+            if value.translation.height > 0 && abs(value.translation.height) > abs(value.translation.width) {
+              dragOffset = value.translation.height
+            }
+          }
+          .onEnded { value in
+            if value.translation.height > 150 && abs(value.translation.height) > abs(value.translation.width) {
+              dismiss()
+            } else {
+              withAnimation(.spring()) {
+                dragOffset = 0
+              }
+            }
+          }
+      )
     }
-    .tabViewStyle(.page(indexDisplayMode: .never))
-    .presentationDetents([.large])
   }
 }
 
