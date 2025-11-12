@@ -18,6 +18,7 @@ final class DiscoveryController {
     isSearching = true
     errorMessage = nil
     lastPrompt = trimmed
+    prompt = ""
     Task {
       do {
         let response = try await APIClient.shared.suggest(prompt: trimmed)
