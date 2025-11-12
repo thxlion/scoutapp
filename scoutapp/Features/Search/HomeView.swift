@@ -2,8 +2,7 @@ import SwiftUI
 
 struct HomeView: View {
   @State private var controller = DiscoveryController()
-  @State private var selectedSuggestion: Suggestion?
-  @State private var showCarousel = false
+  @State private var selectedResult: SearchResult?
   @FocusState private var isInputFocused: Bool
 
   var body: some View {
@@ -12,28 +11,37 @@ struct HomeView: View {
     NavigationStack {
       GeometryReader { geometry in
         ZStack(alignment: .bottom) {
-          ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-              Text("What do you feel like watching?")
-                .font(.system(size: 20, weight: .regular, design: .default))
-                .tracking(-0.24)
-                .lineSpacing(32 - 20) // Line height 32pt - font size 20pt
-                .foregroundColor(Color(red: 0x91/255, green: 0x91/255, blue: 0x91/255))
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.top, 20)
+          ScrollViewReader { proxy in
+            ScrollView {
+              VStack(alignment: .leading, spacing: 20) {
+                Text("What do you feel like watching?")
+                  .font(.system(size: 20, weight: .regular, design: .default))
+                  .tracking(-0.24)
+                  .lineSpacing(32 - 20) // Line height 32pt - font size 20pt
+                  .foregroundColor(Color(red: 0x91/255, green: 0x91/255, blue: 0x91/255))
+                  .frame(maxWidth: .infinity, alignment: .leading)
+                  .padding(.top, 20)
 
-              conversationSection(controller: controller)
-              suggestionsSection(controller: controller)
-              Spacer(minLength: 120)
+                conversationSection(controller: controller)
+                Spacer(minLength: 120)
+                  .id("bottom")
+              }
+              .padding(.horizontal, 20)
             }
-            .padding(.horizontal, 20)
+            .safeAreaInset(edge: .top) { Color.clear.frame(height: 0) }
+            .simultaneousGesture(
+              DragGesture().onChanged { _ in
+                UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+              }
+            )
+            .onChange(of: controller.isSearching) { _, isSearching in
+              if isSearching {
+                withAnimation {
+                  proxy.scrollTo("bottom", anchor: .bottom)
+                }
+              }
+            }
           }
-          .safeAreaInset(edge: .top) { Color.clear.frame(height: 0) }
-          .simultaneousGesture(
-            DragGesture().onChanged { _ in
-              UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
-            }
-          )
 
           inputBar(controller: controller)
         }
@@ -41,39 +49,46 @@ struct HomeView: View {
       .background(Color(.systemBackground))
       .navigationBarHidden(true)
       .preferredColorScheme(.light)
-      .sheet(isPresented: $showCarousel) {
-        CarouselDetailView(suggestions: controller.suggestions)
+      .sheet(item: $selectedResult) { result in
+        CarouselDetailView(suggestions: result.suggestions)
       }
     }
   }
 
   @ViewBuilder
   private func conversationSection(controller: DiscoveryController) -> some View {
-    VStack(alignment: .leading, spacing: 16) {
-      if let lastPrompt = controller.lastPrompt {
-        bubble(text: lastPrompt, alignment: .trailing, color: Color(red: 0xF4/255, green: 0xF4/255, blue: 0xF4/255), textColor: Color(red: 0x79/255, green: 0x79/255, blue: 0x79/255))
+    LazyVStack(alignment: .leading, spacing: 16) {
+      // Display search history (limit to last 10 for performance)
+      ForEach(controller.searchHistory.suffix(10)) { result in
+        VStack(alignment: .leading, spacing: 16) {
+          // User's prompt bubble
+          bubble(text: result.prompt, alignment: .trailing, color: Color(red: 0xF4/255, green: 0xF4/255, blue: 0xF4/255), textColor: Color(red: 0x79/255, green: 0x79/255, blue: 0x79/255))
+
+          // Response bubble
+          responseSummaryBubble(suggestions: result.suggestions)
+
+          // Stacked cards preview
+          StackedCardsPreview(suggestions: result.suggestions) {
+            selectedResult = result
+          }
+          .padding(.top, -8)
+        }
       }
 
+      // Show pending prompt immediately
+      if let pending = controller.pendingPrompt {
+        bubble(text: pending, alignment: .trailing, color: Color(red: 0xF4/255, green: 0xF4/255, blue: 0xF4/255), textColor: Color(red: 0x79/255, green: 0x79/255, blue: 0x79/255))
+      }
+
+      // Show loading state for current search
       if controller.isSearching {
         LoadingBubbleView()
-      } else if let error = controller.errorMessage {
-        bubble(text: error, alignment: .leading, color: Color.red.opacity(0.15), textColor: .red)
-      } else if !controller.suggestions.isEmpty {
-        responseSummaryBubble(suggestions: controller.suggestions)
       }
-    }
-  }
 
-  @ViewBuilder
-  private func suggestionsSection(controller: DiscoveryController) -> some View {
-    if controller.suggestions.isEmpty {
-      EmptyView()
-    } else {
-      StackedCardsPreview(suggestions: controller.suggestions) {
-        showCarousel = true
+      // Show error if present
+      if let error = controller.errorMessage {
+        bubble(text: error, alignment: .leading, color: Color.red.opacity(0.15), textColor: .red)
       }
-      .padding(.top, -8)
-      .animation(.spring(duration: 0.3), value: controller.suggestions)
     }
   }
 
@@ -103,7 +118,10 @@ struct HomeView: View {
         .frame(maxWidth: .infinity)
 
         if isInputFocused {
-          Button(action: controller.search) {
+          Button(action: {
+            controller.search()
+            isInputFocused = false
+          }) {
             Image("send")
               .resizable()
               .renderingMode(.template)
@@ -244,7 +262,7 @@ struct LoadingBubbleView: View {
 }
 
 struct AnimatedDots: View {
-  @State private var animationPhase = 0
+  @State private var currentPhase = 0
 
   var body: some View {
     HStack(spacing: 3) {
@@ -253,18 +271,19 @@ struct AnimatedDots: View {
           .fill(Color(red: 0x3B/255, green: 0x90/255, blue: 0xFF/255))
           .frame(width: 5, height: 5)
           .opacity(opacityForDot(index))
+          .animation(.easeInOut(duration: 0.6), value: currentPhase)
       }
     }
     .onAppear {
-      Timer.scheduledTimer(withTimeInterval: 0.4, repeats: true) { _ in
-        animationPhase = (animationPhase + 1) % 3
+      Timer.scheduledTimer(withTimeInterval: 0.6, repeats: true) { _ in
+        currentPhase = (currentPhase + 1) % 3
       }
     }
   }
 
   private func opacityForDot(_ index: Int) -> Double {
-    let adjusted = (index - animationPhase + 3) % 3
-    switch adjusted {
+    let phase = (index - currentPhase + 3) % 3
+    switch phase {
     case 0: return 1.0
     case 1: return 0.6
     case 2: return 0.3
