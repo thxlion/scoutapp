@@ -3,6 +3,7 @@ import SwiftUI
 struct HomeView: View {
   @State private var controller = DiscoveryController()
   @State private var selectedSuggestion: Suggestion?
+  @State private var showCarousel = false
   @FocusState private var isInputFocused: Bool
 
   var body: some View {
@@ -40,8 +41,8 @@ struct HomeView: View {
       .background(Color(.systemBackground))
       .navigationBarHidden(true)
       .preferredColorScheme(.light)
-      .sheet(item: $selectedSuggestion) { suggestion in
-        SuggestionDetailView(suggestion: suggestion, responseText: controller.responseText)
+      .sheet(isPresented: $showCarousel) {
+        CarouselDetailView(suggestions: controller.suggestions)
       }
     }
   }
@@ -57,11 +58,9 @@ struct HomeView: View {
         LoadingBubbleView()
       } else if let error = controller.errorMessage {
         bubble(text: error, alignment: .leading, color: Color.red.opacity(0.15), textColor: .red)
+      } else if !controller.suggestions.isEmpty {
+        responseSummaryBubble(suggestions: controller.suggestions)
       }
-      // Hide GPT response text - just show cards
-      // else if let response = controller.responseText, !response.isEmpty {
-      //   bubble(text: response, alignment: .leading, color: Color(red: 0x3B/255, green: 0x90/255, blue: 0xFF/255), textColor: Color(red: 0xFF/255, green: 0xFF/255, blue: 0xFF/255))
-      // }
     }
   }
 
@@ -70,9 +69,10 @@ struct HomeView: View {
     if controller.suggestions.isEmpty {
       EmptyView()
     } else {
-      SuggestionGridView(suggestions: controller.suggestions) { suggestion in
-        selectedSuggestion = suggestion
+      StackedCardsPreview(suggestions: controller.suggestions) {
+        showCarousel = true
       }
+      .padding(.top, -8)
       .animation(.spring(duration: 0.3), value: controller.suggestions)
     }
   }
@@ -157,6 +157,33 @@ struct HomeView: View {
     let totalChars = text.count
     let lines = max(1, (totalChars + charsPerLine - 1) / charsPerLine)
     return lines
+  }
+
+  private func responseSummaryBubble(suggestions: [Suggestion]) -> some View {
+    let count = suggestions.count
+    let mediaType = suggestions.first?.mediaType == .tv ? "Anime's" : "titles"
+
+    var summaryText = "Found \(count) \(mediaType) that fit this vibe. "
+
+    if count > 0 {
+      summaryText += suggestions[0].title
+    }
+    if count > 1 {
+      summaryText += ", \(suggestions[1].title)"
+    }
+    if count > 2 {
+      let remaining = count - 2
+      summaryText += ", and \(remaining) other\(remaining == 1 ? "" : "s")."
+    } else if count <= 2 {
+      summaryText += "."
+    }
+
+    return bubble(
+      text: summaryText,
+      alignment: .leading,
+      color: Color(red: 0x3B/255, green: 0x90/255, blue: 0xFF/255),
+      textColor: Color(red: 0xFF/255, green: 0xFF/255, blue: 0xFF/255)
+    )
   }
 }
 
@@ -246,26 +273,96 @@ struct AnimatedDots: View {
   }
 }
 
-struct SuggestionGridView: View {
+struct StackedCardsPreview: View {
   let suggestions: [Suggestion]
-  let onSelect: (Suggestion) -> Void
-
-  private let columns = [
-    GridItem(.flexible(), spacing: 16),
-    GridItem(.flexible(), spacing: 16)
-  ]
+  let onViewTapped: () -> Void
 
   var body: some View {
-    LazyVGrid(columns: columns, spacing: 16) {
-      ForEach(suggestions) { suggestion in
-        Button {
-          onSelect(suggestion)
-        } label: {
-          SuggestionCard(suggestion: suggestion)
+    HStack(spacing: 8) {
+      // Image stack container
+      ZStack {
+        // Left card - -15 degrees
+        if suggestions.count > 0 {
+          cardView(suggestion: suggestions[0])
+            .rotationEffect(.degrees(-15), anchor: .center)
+            .position(x: 15, y: 20)
+            .zIndex(0)
         }
-        .buttonStyle(.plain)
+
+        // Middle card - no rotation
+        if suggestions.count > 1 {
+          cardView(suggestion: suggestions[1])
+            .rotationEffect(.degrees(0))
+            .position(x: 27, y: 16)
+            .zIndex(1)
+        }
+
+        // Right card - 14 degrees
+        if suggestions.count > 2 {
+          cardView(suggestion: suggestions[2])
+            .rotationEffect(.degrees(14), anchor: .center)
+            .position(x: 35, y: 22)
+            .zIndex(2)
+        }
+      }
+      .frame(width: 52, height: 40)
+
+      // View button
+      Button(action: onViewTapped) {
+        HStack(spacing: 6) {
+          Text("View")
+            .font(.system(size: 13, weight: .regular, design: .default))
+            .tracking(-0.24)
+            .lineSpacing(20 - 13)
+            .foregroundColor(Color(red: 0x79/255, green: 0x79/255, blue: 0x79/255))
+
+          // Circular icon container
+          ZStack {
+            Image("play")
+              .resizable()
+              .renderingMode(.template)
+              .scaledToFit()
+              .frame(width: 16, height: 16)
+              .foregroundStyle(Color(red: 0x79/255, green: 0x79/255, blue: 0x79/255))
+          }
+          .frame(width: 24, height: 24)
+          .background(
+            Circle()
+              .fill(Color.white)
+              .shadow(color: Color.black.opacity(0.06), radius: 4, x: 0, y: 2)
+          )
+        }
+        .frame(height: 40)
+        .padding(.leading, 14)
+        .padding(.trailing, 8)
+        .background(Color(red: 0xF4/255, green: 0xF4/255, blue: 0xF4/255))
+        .cornerRadius(20)
+      }
+      .fixedSize()
+    }
+    .padding(.leading, 4)
+  }
+
+  private func cardView(suggestion: Suggestion) -> some View {
+    AsyncImage(url: suggestion.posterURL) { phase in
+      switch phase {
+      case .success(let image):
+        image.resizable().scaledToFill()
+      case .failure:
+        Color(.systemGray4)
+      case .empty:
+        Color(.systemGray4)
+      @unknown default:
+        Color(.systemGray4)
       }
     }
+    .frame(width: 24, height: 32)
+    .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
+    .overlay(
+      RoundedRectangle(cornerRadius: 4, style: .continuous)
+        .strokeBorder(Color.black.opacity(0.18), lineWidth: 1)
+    )
+    .shadow(color: Color.black.opacity(0.32), radius: 4, x: 0, y: 1)
   }
 }
 
@@ -311,81 +408,116 @@ struct SuggestionCard: View {
   }
 }
 
-struct SuggestionDetailView: View {
-  let suggestion: Suggestion
-  let responseText: String?
+struct CarouselDetailView: View {
+  let suggestions: [Suggestion]
+  @State private var currentIndex = 0
 
   var body: some View {
-    ScrollView {
-      VStack(alignment: .leading, spacing: 16) {
-        AsyncImage(url: suggestion.posterURL) { phase in
-          switch phase {
-          case .success(let image):
-            image.resizable().scaledToFit()
-          case .failure:
-            Color(.systemGray5)
-          case .empty:
-            Color(.systemGray5).overlay { ProgressView() }
-          @unknown default:
-            Color(.systemGray5)
-          }
-        }
-        .frame(maxWidth: .infinity)
-        .clipShape(RoundedRectangle(cornerRadius: 20))
+    TabView(selection: $currentIndex) {
+      ForEach(Array(suggestions.enumerated()), id: \.element.id) { index, suggestion in
+        ScrollView {
+          VStack(spacing: 24) {
+            // Coverflow-style card stack
+            ZStack {
+              ForEach(Array(suggestions.enumerated()), id: \.element.id) { cardIndex, cardSuggestion in
+                let offset = CGFloat(cardIndex - currentIndex)
+                let isVisible = abs(offset) <= 1
 
-        Text(suggestion.title)
-          .font(.title.bold())
-
-        HStack(spacing: 12) {
-          if !suggestion.displayYear.isEmpty {
-            Text(suggestion.displayYear)
-              .font(.subheadline)
-              .foregroundStyle(.secondary)
-          }
-          if let rating = suggestion.tmdb?.voteAverage {
-            HStack(spacing: 4) {
-              Image(systemName: "star.fill")
-                .font(.caption)
-                .foregroundStyle(.yellow)
-              Text(String(format: "%.1f", rating))
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-            }
-          }
-        }
-
-        if !suggestion.genres.isEmpty {
-          ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
-              ForEach(suggestion.genres, id: \.self) { genre in
-                Text(genre)
-                  .font(.footnote.weight(.medium))
-                  .padding(.horizontal, 12)
-                  .padding(.vertical, 6)
-                  .background(
-                    Capsule()
-                      .fill(Color.blue.opacity(0.15))
-                  )
-                  .foregroundStyle(.blue)
+                if isVisible {
+                  AsyncImage(url: cardSuggestion.posterURL) { phase in
+                    switch phase {
+                    case .success(let image):
+                      image.resizable().scaledToFill()
+                    case .failure:
+                      Color(.systemGray4)
+                    case .empty:
+                      Color(.systemGray4).overlay { ProgressView() }
+                    @unknown default:
+                      Color(.systemGray4)
+                    }
+                  }
+                  .frame(width: 240, height: 360)
+                  .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+                  .shadow(color: Color.black.opacity(0.2), radius: 16, x: 0, y: 8)
+                  .scaleEffect(cardIndex == currentIndex ? 1.0 : 0.85)
+                  .offset(x: offset * 80)
+                  .zIndex(cardIndex == currentIndex ? 1 : 0)
+                  .animation(.spring(duration: 0.3), value: currentIndex)
+                }
               }
             }
-          }
-        }
+            .frame(height: 360)
 
-        if !suggestion.overview.isEmpty {
-          VStack(alignment: .leading, spacing: 4) {
-            Text("Overview")
-              .font(.headline)
-            Text(suggestion.overview)
-          }
-        }
+            // Title and metadata
+            VStack(spacing: 12) {
+              Text(suggestion.title)
+                .font(.system(size: 24, weight: .bold))
+                .multilineTextAlignment(.center)
 
-        if let providers = suggestion.providers {
-          ProviderSection(providers: providers)
+              HStack(spacing: 12) {
+                if !suggestion.displayYear.isEmpty {
+                  Text(suggestion.displayYear)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                }
+                if let rating = suggestion.tmdb?.voteAverage {
+                  HStack(spacing: 4) {
+                    Image(systemName: "star.fill")
+                      .font(.caption)
+                      .foregroundStyle(.yellow)
+                    Text(String(format: "%.1f", rating))
+                      .font(.subheadline)
+                      .foregroundStyle(.secondary)
+                  }
+                }
+              }
+            }
+
+            // Genres
+            if !suggestion.genres.isEmpty {
+              ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                  ForEach(suggestion.genres, id: \.self) { genre in
+                    Text(genre)
+                      .font(.footnote.weight(.medium))
+                      .padding(.horizontal, 12)
+                      .padding(.vertical, 6)
+                      .background(
+                        Capsule()
+                          .fill(Color.blue.opacity(0.15))
+                      )
+                      .foregroundStyle(.blue)
+                  }
+                }
+                .padding(.horizontal, 24)
+              }
+            }
+
+            // Overview
+            if !suggestion.overview.isEmpty {
+              VStack(alignment: .leading, spacing: 8) {
+                Text("Overview")
+                  .font(.headline)
+                Text(suggestion.overview)
+                  .font(.body)
+                  .foregroundStyle(.secondary)
+              }
+              .frame(maxWidth: .infinity, alignment: .leading)
+              .padding(.horizontal, 24)
+            }
+
+            // Providers
+            if let providers = suggestion.providers {
+              ProviderSection(providers: providers)
+                .padding(.horizontal, 24)
+            }
+          }
+          .padding(.vertical, 24)
         }
+        .tag(index)
       }
-      .padding(24)
     }
+    .tabViewStyle(.page(indexDisplayMode: .never))
     .presentationDetents([.large])
   }
 }
