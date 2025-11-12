@@ -202,17 +202,40 @@ struct SuggestionDetailView: View {
 
         Text(suggestion.title)
           .font(.title.bold())
-        if !suggestion.displayYear.isEmpty {
-          Text(suggestion.displayYear)
-            .font(.subheadline)
-            .foregroundStyle(.secondary)
+
+        HStack(spacing: 12) {
+          if !suggestion.displayYear.isEmpty {
+            Text(suggestion.displayYear)
+              .font(.subheadline)
+              .foregroundStyle(.secondary)
+          }
+          if let rating = suggestion.tmdb?.voteAverage {
+            HStack(spacing: 4) {
+              Image(systemName: "star.fill")
+                .font(.caption)
+                .foregroundStyle(.yellow)
+              Text(String(format: "%.1f", rating))
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+            }
+          }
         }
 
-        if let responseText {
-          VStack(alignment: .leading, spacing: 4) {
-            Text("GPT said")
-              .font(.headline)
-            Text(responseText)
+        if !suggestion.genres.isEmpty {
+          ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+              ForEach(suggestion.genres, id: \.self) { genre in
+                Text(genre)
+                  .font(.footnote.weight(.medium))
+                  .padding(.horizontal, 12)
+                  .padding(.vertical, 6)
+                  .background(
+                    Capsule()
+                      .fill(Color.blue.opacity(0.15))
+                  )
+                  .foregroundStyle(.blue)
+              }
+            }
           }
         }
 

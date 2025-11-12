@@ -51,7 +51,7 @@ async function generateGPTResponse(prompt: string, env: Env): Promise<string> {
     },
     body: JSON.stringify({
       model: "gpt-4o-mini",
-      temperature: 0.7,
+      temperature: 0.3, // Lower for more consistent results
       messages: [
         {
           role: "system",
@@ -89,14 +89,17 @@ async function extractTitles(prompt: string, responseText: string, env: Env): Pr
       messages: [
         {
           role: "system",
-          content: `Extract every concrete media title from the assistant reply and return them as JSON.
-Rules:
-- Return clean title text only (no markdown formatting like ** or *, no extra quotes)
-- Remove any subtitle after : or - unless it's part of the official title
-- If year is mentioned in context, include it; otherwise omit the year field
+          content: `Extract ONLY the actual names of movies, TV shows, anime, or documentaries from the assistant reply. Return them as JSON.
+
+Critical Rules:
+- Extract ONLY proper titles/names of watchable media (e.g., "Naruto", "Breaking Bad", "Inception")
+- DO NOT extract concepts, themes, features, or descriptive words (e.g., "quirks", "powers", "magic", "breathing styles")
+- DO NOT extract single common words unless clearly a title
+- Return clean title text (no markdown ** or *, no extra quotes)
+- If year is mentioned, include it; otherwise omit
 - Use media_type: "movie", "tv", or "documentary"
 
-Respond with JSON in this format: {"titles": [{"title":"...", "media_type":"...", "year":"..."}]}`
+Respond with JSON: {"titles": [{"title":"...", "media_type":"...", "year":"..."}]}`
         },
         {
           role: "user",
@@ -115,10 +118,20 @@ Respond with JSON in this format: {"titles": [{"title":"...", "media_type":"..."
         const titles = parsed.titles;
         if (Array.isArray(titles)) {
           extracted = titles
-            .filter((entry: any) => typeof entry.title === "string" && entry.title.trim().length)
+            .filter((entry: any) => {
+              if (typeof entry.title !== "string" || !entry.title.trim().length) return false;
+              const cleaned = entry.title.replace(/^[\*_]+|[\*_]+$/g, "").trim();
+              // Filter out likely concept words: too short or common descriptor words
+              if (cleaned.length < 2) return false;
+              // Filter out common concept words that aren't titles
+              const lower = cleaned.toLowerCase();
+              const conceptWords = ['quirks', 'powers', 'magic', 'abilities', 'styles', 'breathing', 'nen', 'stands', 'haki', 'chakra', 'jutsu'];
+              if (conceptWords.includes(lower)) return false;
+              return true;
+            })
             .map((entry: any, index: number) => ({
               id: crypto.randomUUID(),
-              title: entry.title.trim(),
+              title: entry.title.replace(/^[\*_]+|[\*_]+$/g, "").trim(), // Clean markdown
               mediaType: normalizeMediaType(entry.media_type),
               year: entry.year ? String(entry.year) : undefined,
               order: index
@@ -132,23 +145,8 @@ Respond with JSON in this format: {"titles": [{"title":"...", "media_type":"..."
     console.warn("extract titles failed", await response.text());
   }
 
-  const fallbackTitles = extractFallbackTitles(responseText);
-  if (fallbackTitles.length > 0) {
-    let order = extracted.length;
-    for (const title of fallbackTitles) {
-      const exists = extracted.some(entry => entry.title.localeCompare(title, undefined, { sensitivity: "accent" }) === 0);
-      if (!exists) {
-        extracted.push({
-          id: crypto.randomUUID(),
-          title,
-          mediaType: "unknown",
-          year: undefined,
-          order
-        });
-        order += 1;
-      }
-    }
-  }
+  // Fallback extraction disabled - JSON extraction should be sufficient
+  // and fallback was causing text fragments to be treated as titles
 
   // Smart deduplication: remove duplicates and very similar titles
   const deduplicated: ExtractedTitle[] = [];
@@ -218,7 +216,7 @@ function extractFallbackTitles(text: string): string[] {
   }
 
   return titles
-    .map(title => title.replace(/[^\w\s:'!-]/g, "").trim())
+    .map(title => title.replace(/[^\w\s:'!\/\-&]/g, "").trim()) // Keep /, -, &
     .filter(Boolean);
 }
 
@@ -245,15 +243,6 @@ async function enrichWithTMDB(entries: ExtractedTitle[], env: Env): Promise<Sugg
 }
 
 // ===== Title Normalization Helpers =====
-
-function normalizeTitle(title: string): string {
-  return title
-    .replace(/^["'"'\*_`]+|["'"'\*_`]+$/g, "")  // Remove quotes, markdown
-    .replace(/\s*[:—-]\s*[^:—-]*$/, "")          // Remove subtitle after :, —, -
-    .replace(/\s*\(\d{4}\)\s*$/, "")              // Remove (year)
-    .replace(/\s+/g, " ")                         // Normalize whitespace
-    .trim();
-}
 
 function removeArticle(title: string): string {
   return title.replace(/^(The|A|An)\s+/i, "").trim();
@@ -392,20 +381,45 @@ async function findTMDBMatch(entry: ExtractedTitle, env: Env): Promise<TMDBInfo 
   }
 }
 
-function pickBestResultWithSimilarity(results: any[], entry: ExtractedTitle, threshold = 0.6) {
+function pickBestResultWithSimilarity(results: any[], entry: ExtractedTitle, threshold = 0.8) {
   if (!results.length) return null;
+
+  // Normalize the search title for better matching
+  const normalizeForMatch = (title: string) => {
+    return removeArticle(title)
+      .toLowerCase()
+      .replace(/[^\w\s]/g, '') // Remove special chars
+      .replace(/\s+/g, ' ')
+      .trim();
+  };
+
+  const normalizedEntry = normalizeForMatch(entry.title);
 
   const candidates = results.map(result => {
     const resultTitle = result.title || result.name || "";
-    const similarity = stringSimilarity(entry.title.toLowerCase(), resultTitle.toLowerCase());
-    const yearMatch = entry.year ?
-      (result.release_date?.slice(0, 4) === entry.year || result.first_air_date?.slice(0, 4) === entry.year) :
-      false;
+    const normalizedResult = normalizeForMatch(resultTitle);
 
-    // Score: similarity (0-1) + year bonus (0.2) + popularity bonus (0-0.1)
-    const score = similarity + (yearMatch ? 0.2 : 0) + Math.min((result.popularity || 0) / 1000, 0.1);
+    // Calculate similarity on normalized titles
+    const similarity = stringSimilarity(normalizedEntry, normalizedResult);
 
-    return { result, similarity, score };
+    const resultYear = result.release_date?.slice(0, 4) || result.first_air_date?.slice(0, 4);
+    const yearMatch = entry.year && resultYear === entry.year;
+    const yearClose = entry.year && resultYear && Math.abs(parseInt(resultYear) - parseInt(entry.year)) <= 1;
+
+    // Filter by media type if specified
+    const typeMatch = !entry.mediaType || entry.mediaType === "unknown" ||
+                      result.media_type === entry.mediaType ||
+                      (entry.mediaType === "tv" && result.media_type === "tv") ||
+                      (entry.mediaType === "movie" && result.media_type === "movie");
+
+    // Score: similarity (0-1) + exact year bonus (0.3) + close year (0.1) + popularity (0-0.1)
+    let score = similarity;
+    if (typeMatch) score += 0.05; // Small bonus for type match
+    if (yearMatch) score += 0.3;   // Big bonus for exact year
+    else if (yearClose) score += 0.1; // Small bonus for year ±1
+    score += Math.min((result.popularity || 0) / 1000, 0.1);
+
+    return { result, similarity, score, yearMatch, typeMatch };
   });
 
   candidates.sort((a, b) => b.score - a.score);
